@@ -290,10 +290,16 @@ foreach my $record(@records) {
 # Clean up
 $get_expired->execute(time);
 while (my $lease = $get_expired->fetchrow_hashref()) {
-	print Dumper $lease;
-	my ($sec,$min,$hour,$day,$mon,$year) = $lease->{time_end};
+	my ($sec,$min,$hour,$day,$mon,$year) = localtime($lease->{time_end});
 	my $expires = sprintf("%04d-%02d-%02d %02d:%02d:%02d",$year + 1900,$mon + 1,$day,$hour,$min,$sec);
-	print "Expires: $expires\n";
+	print "IP Address ".$lease->{ip_address}." for ".$lease->{hostname}." expires: $expires\n";
+
+	# Delete Expired Lease
+	$delete_lease->execute($lease->{mac_address});
+	if (DBI->errstr) {
+		notify("Error deleting lease: ".DBI->errstr,'error');
+		exit 1;
+	}
 }
 ###################################################
 ### Subroutines									###
