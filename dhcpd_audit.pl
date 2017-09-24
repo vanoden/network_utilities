@@ -126,6 +126,22 @@ my $update_lease_query = "
 my $update_lease = $dbh->prepare($update_lease_query)
 	or die "Cannot prepare query to update lease: ".DBI->errstr."\n";
 
+my $get_expired_query = "
+	SELECT	*
+	FROM	leases
+	WHERE	time_end < ?
+";
+my $get_expired = $dbh->prepare($get_expired_query)
+	or die "Cannot prepare query to get leases: ".DBI->errstr."\n";
+
+my $delete_lease_query = "
+	DELETE
+	FROM	leases
+	WHERE	mac_address = ?
+";
+my $delete_lease = $dbh->prepare($delete_lease_query)
+	or die "Cannot prepare query to delete lease: ".DBI->errstr."\n";
+
 ###################################################
 ### Main Procedure								###
 ###################################################
@@ -161,6 +177,25 @@ foreach my $record(@records) {
 			}
 			unless ($lease{'hostname'}) {
 				$lease{'hostname'} = '[null]';
+			}
+
+			# See if Address already in use
+			$get_lease_by_ip->execute($lease{ip_address});
+			if (DBI->errstr) {
+				notify("Error checking database for used address: ".DBI->errstr,'error');
+				exit 1;
+			}
+			while (my $conflict = $get_lease_by_ip->fetchrow_hashref()) {
+				if ($conflict->{mac_address}) {
+					if ($conflict->{time_end} < time) {
+						# Delete Expired Lease
+						$delete_lease->execute($conflict->{mac_address});
+						if (DBI->errstr) {
+							notify("Error deleting lease: ".DBI->errstr,'error');
+							exit 1;
+						}
+					}
+				}
 			}
 
 			# See if lease exists
@@ -250,6 +285,12 @@ foreach my $record(@records) {
 	else {
 		notify("Unrecognized record: ".$record,'debug');
 	}
+}
+
+# Clean up
+$get_expired->execute();
+while (my $lease = $get_expired->fetchrow_hashref()) {
+	print Dumper $lease;
 }
 ###################################################
 ### Subroutines									###
