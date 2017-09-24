@@ -291,6 +291,9 @@ foreach my $record(@records) {
 $get_expired->execute(time);
 while (my $lease = $get_expired->fetchrow_hashref()) {
 	print Dumper $lease;
+	my ($sec,$min,$hour,$day,$mon,$year) = $lease->{time_end};
+	my $expires = sprintf("%04d-%02d-%02d %02d:%02d:%02d",$year + 1900,$mon + 1,$day,$hour,$min,$sec);
+	print "Expires: $expires\n";
 }
 ###################################################
 ### Subroutines									###
