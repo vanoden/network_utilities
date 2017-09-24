@@ -292,7 +292,7 @@ $get_expired->execute(time);
 while (my $lease = $get_expired->fetchrow_hashref()) {
 	my ($sec,$min,$hour,$day,$mon,$year) = localtime($lease->{time_end});
 	my $expires = sprintf("%04d-%02d-%02d %02d:%02d:%02d",$year + 1900,$mon + 1,$day,$hour,$min,$sec);
-	print "IP Address ".$lease->{ip_address}." for ".$lease->{hostname}." expires: $expires\n";
+	notify("IP Address ".$lease->{ip_address}." for ".$lease->{hostname}." expires: $expires");
 
 	# Delete Expired Lease
 	$delete_lease->execute($lease->{mac_address});
