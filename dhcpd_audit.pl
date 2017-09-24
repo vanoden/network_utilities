@@ -288,7 +288,7 @@ foreach my $record(@records) {
 }
 
 # Clean up
-$get_expired->execute();
+$get_expired->execute(time);
 while (my $lease = $get_expired->fetchrow_hashref()) {
 	print Dumper $lease;
 }
